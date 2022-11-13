@@ -1,7 +1,6 @@
 import numpy as np
 import time
 import cv2
-cv2
 from dotenv import load_dotenv
 import os
 
@@ -54,11 +53,6 @@ if __name__ == "__main__":
             output = img_processor.process(os.getenv("DATASET_IMAGES_PATH")+f)
             cv2.waitKey(0)
             cv2.imwrite(output_path+f, output)
-            '''
-            count+=1
-            if count == 5:
-                break
-            '''
             
     end_time = time.time() # end time
     print("Execution time: "+str(end_time-start_time)+" seconds")
