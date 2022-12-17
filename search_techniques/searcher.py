@@ -93,6 +93,9 @@ class GreedySearcher(Searcher): # time best, accuracy worst
         output.sort(key = lambda x: -1*x[1])
         return output[0:output_size] 
 
-
 class KMeansSearching: # medium accuracy and execution time
-    pass
+
+    def __init__(self, text_converter):
+        super().__init__(text_converter)
+    
+    
