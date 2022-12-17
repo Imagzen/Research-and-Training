@@ -5,8 +5,9 @@ from config import GOOGLE_EMBEDDINGS_TF_HUB_URL, IMAGE_DIR_PATH, PATH_BREAK_CHAR
 
 class LocalUploader:
 
-    def __init__(self, img_to_vector_converter):
+    def __init__(self, img_to_vector_converter, tasks):
         self.img_to_vector_converter = img_to_vector_converter
+        self.tasks = tasks
 
     def beautify_path(func):
         '''
@@ -39,6 +40,8 @@ class LocalUploader:
         vector = self.img_to_vector_converter.convert(raw_img)
         self.saveImage(img,IMAGE_DIR_PATH,img_name)
         self.saveVector(vector, VECTOR_DIR_PATH, img_name[0:-4])
+        for task in self.tasks:
+            task.execute(vector)
 
     def saveImage(self, img, path, name): # saves file to local, should be overriden to upload to web
         im = Image.fromarray(np.uint8(img))

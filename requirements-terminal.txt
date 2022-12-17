@@ -2,3 +2,4 @@ argparse
 numpy
 cv2
 tensorflow_hub
+sklearn

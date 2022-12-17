@@ -1,7 +1,7 @@
 import argparse
 from uploader.uploader import LocalUploader
-from search_techniques.searcher import LinearSearcher
-from search_techniques.searcher import GreedySearcher
+from search_techniques.searchers import LinearSearcher
+from search_techniques.searchers import GreedySearcher
 from converters.image_converters import LavisImageToVectorConverter
 from converters.text_converters import GoogleTextConverter
 from config import *
@@ -43,7 +43,7 @@ if __name__ == '__main__':
         print("Initializing Environment")
         text_converter = GoogleTextConverter()
         image_converter = LavisImageToVectorConverter(text_converter)
-        uploader = LocalUploader(image_converter)
+        uploader = LocalUploader(image_converter, [])
         if args.i:
             while True:
                 path = input('>>>')

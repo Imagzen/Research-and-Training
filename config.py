@@ -5,3 +5,6 @@ VECTOR_DIR_PATH = 'uploads\\vectors\\'
 VECTOR_DIM = 512
 SEARCH_COUNT = 16
 THRESH = 128
+MAX_CLUSTERS = 1024
+CLUSTER_THRESH = 16
+CLUSTERS_PATH = "uploads\\clusters\\"

@@ -8,13 +8,13 @@ class Searcher(ABC):
 
     def __init__(self, text_converter):
         self.text_converter = text_converter
-        self.vectors = self.load_vectors()
+        self.vectors = self.load_vectors(VECTOR_DIR_PATH, VECTOR_DIM)
         self.names = [n for n in os.listdir(IMAGE_DIR_PATH)]
     
-    def load_vectors(self):
+    def load_vectors(self, path, dim):
         vector_array = []
-        for file in os.listdir(VECTOR_DIR_PATH):
-            vector = np.load(VECTOR_DIR_PATH+file).reshape(VECTOR_DIM)
+        for file in os.listdir(path):
+            vector = np.load(path+file).reshape(dim)
             vector_array.append(vector)
         return np.stack(vector_array, axis = 0)
     
@@ -97,5 +97,7 @@ class KMeansSearching: # medium accuracy and execution time
 
     def __init__(self, text_converter):
         super().__init__(text_converter)
-    
+
+    def getMostSimilarVectors(self, input_vector, output_size):
+        pass
     
