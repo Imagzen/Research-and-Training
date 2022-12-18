@@ -41,7 +41,7 @@ class LocalUploader:
         self.saveImage(img,IMAGE_DIR_PATH,img_name)
         self.saveVector(vector, VECTOR_DIR_PATH, img_name[0:-4])
         for task in self.tasks:
-            task.execute(vector)
+            task.execute(vector, img_name[0:-4])
 
     def saveImage(self, img, path, name): # saves file to local, should be overriden to upload to web
         im = Image.fromarray(np.uint8(img))

@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from config import *
 import os
+import pickle
 from converters.text_converters import GoogleTextConverter
 
 class Searcher(ABC):
@@ -52,39 +53,45 @@ class GreedySearcher(Searcher): # time best, accuracy worst
         super().__init__(text_converter)
 
     def util(self, output_set, column_number, thresh):
-        if thresh< MIN_THRESH:
+        if thresh < MIN_THRESH:
             thresh = MIN_THRESH
         
+        if column_number == VECTOR_DIM:
+            return output_set
+        
         dict_ = {i:[] for i in range(1,101)}
+        next_output_set = []
+        distances = []
         for row_number in output_set:
-            if column_number == VECTOR_DIM:
-                return output_set
             
             value = self.vectors[row_number][column_number]
-            distances = []
-            count = 0
-            for s in range(100, 0, -1):
-                if value<=(s/100):
-                    dict_[s].append(row_number)
+            x = 1
+            for s in range(1, 101):
+                if value>(s/100):
                     break
+                else:
+                    x = s
             
-            for s in range(100, 0, -1):
-                distances.append((abs(s/100 - value), s))
-
-            distances.sort(key = lambda x: x[0]) 
-            next_output_set = []
-            for d in distances:
-                for l in dict_[d[1]]:
-                    next_output_set.append(l)
-                count+=len(dict_[d[1]])
-                if count>=thresh:
-                    break 
+            dict_[x].append(row_number)
             
-            return self.util(next_output_set, column_number+1, thresh - 10)
+        for s in range(100, 0, -1):
+            distances.append((abs(s/100 - value), s))
+        
+        
+        distances.sort(key = lambda x: x[0]) 
+        count = 0
+        for d in distances:
+            for l in dict_[d[1]]:
+                next_output_set.append(l)
+            count+=len(dict_[d[1]])
+            if count>=thresh:
+                break 
+            
+        return self.util(next_output_set, column_number+1, thresh - 10)
 
 
     def getMostSimilarVectors(self, input_vector, output_size):
-        output_set = set([i for i in range(self.vectors.shape[0])])
+        output_set = [i for i in range(self.vectors.shape[0])]
         output_set = self.util(output_set, 0, THRESH)
         output = []
         for i in output_set:
@@ -96,11 +103,60 @@ class GreedySearcher(Searcher): # time best, accuracy worst
         output.sort(key = lambda x: -1*x[1])
         return output[0:output_size] 
 
-class KMeansSearching: # medium accuracy and execution time
+class KMeansSearching(Searcher): # medium accuracy and execution time
 
     def __init__(self, text_converter):
         super().__init__(text_converter)
+    
+    def load_vectors_with_mapping(self):
+        vector_array = []
+        vector_to_ind = {}
+        count = 0
+        for file in os.listdir(VECTOR_DIR_PATH):
+            vector = np.load(VECTOR_DIR_PATH+file).reshape(VECTOR_DIM)
+            vector_array.append(vector)
+            vector_to_ind[file[0:-4]] = count
+            count+=1
+        return np.stack(vector_array, axis = 0), vector_to_ind
+    
+    def load_centroids(self):
+        centroids = {}
+        for f in os.listdir(CLUSTERS_PATH):
+            centroid = np.load(CLUSTERS_PATH+f).reshape(VECTOR_DIM)
+            centroids[f[0:-4]] = centroid
+        return centroids
+    
+    def load_mappings(self):
+        with open(MAPPING_PATH, 'rb') as f:
+            mapping = pickle.load(f)
+        rev_mapping = {}
+        for k, v in mapping.items():
+            if v not in rev_mapping:
+                rev_mapping[v] = []
+            
+            rev_mapping[v].append(k)
+        return (mapping, rev_mapping)
 
     def getMostSimilarVectors(self, input_vector, output_size):
-        pass
+        centroids = self.load_centroids()
+        mappings, rev_mappings = self.load_mappings()
+        vectors , vector_to_ind = self.load_vectors_with_mapping()
+
+        similarities = []
+        for c in centroids.keys():
+            similarity = (np.dot(centroids[c],input_vector)/(np.linalg.norm(centroids[c])*np.linalg.norm(input_vector))+1)/2
+            similarities.append((c, similarity))
+        
+        similarities.sort(key = lambda x: -x[1])
+        target_centroid = similarities[0][0]
+        vector_names = rev_mappings[target_centroid]
+        output = []
+        for name in vector_names:
+            A = vectors[vector_to_ind[name]].reshape(VECTOR_DIM)
+            B = input_vector.reshape(VECTOR_DIM)
+            s = (np.dot(A,B)/(np.linalg.norm(A)*np.linalg.norm(B))+1)/2
+            output.append((vector_to_ind[name], s))
+        
+        output.sort(key=  lambda x: -x[1])
+        return output
     

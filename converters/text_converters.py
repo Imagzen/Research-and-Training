@@ -12,6 +12,5 @@ class GoogleTextConverter:
 
     def convert(self, desc):
         arr = np.array(self.embed([desc]))
-        print(arr)
         return arr
 
