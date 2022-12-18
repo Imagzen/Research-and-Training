@@ -51,7 +51,10 @@ class GreedySearcher(Searcher): # time best, accuracy worst
     def __init__(self, text_converter):
         super().__init__(text_converter)
 
-    def util(self, output_set, column_number):
+    def util(self, output_set, column_number, thresh):
+        if thresh< MIN_THRESH:
+            thresh = MIN_THRESH
+        
         dict_ = {i:[] for i in range(1,101)}
         for row_number in output_set:
             if column_number == VECTOR_DIM:
@@ -74,15 +77,15 @@ class GreedySearcher(Searcher): # time best, accuracy worst
                 for l in dict_[d[1]]:
                     next_output_set.append(l)
                 count+=len(dict_[d[1]])
-                if count>=THRESH:
+                if count>=thresh:
                     break 
             
-            return self.util(next_output_set, column_number+1)
+            return self.util(next_output_set, column_number+1, thresh - 10)
 
 
     def getMostSimilarVectors(self, input_vector, output_size):
         output_set = set([i for i in range(self.vectors.shape[0])])
-        output_set = self.util(output_set, 0)
+        output_set = self.util(output_set, 0, THRESH)
         output = []
         for i in output_set:
             A = self.vectors[i]
