@@ -1,7 +1,8 @@
 import numpy as np
 from PIL import Image
 import sys
-from config import GOOGLE_EMBEDDINGS_TF_HUB_URL, IMAGE_DIR_PATH, PATH_BREAK_CHAR, VECTOR_DIR_PATH
+from config import IMAGE_DIR_PATH, PATH_BREAK_CHAR, VECTOR_DIR_PATH
+from logger.Logger import Logger
 
 class LocalUploader:
 
@@ -33,7 +34,7 @@ class LocalUploader:
 
     @beautify_path
     def upload(self, path):
-        print("Uploading "+path)
+        Logger.d("Uploader", "Uploading "+path)
         raw_img = Image.open(path)
         img = np.asarray(raw_img)
         img_name = self.extract_image_name(path)

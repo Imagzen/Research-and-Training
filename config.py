@@ -11,3 +11,5 @@ MAX_CLUSTER_SIZE = 16
 CLUSTER_THRESH = 16
 CLUSTERS_PATH = "uploads\\clusters\\centroids\\"
 MAPPING_PATH = 'uploads\\clusters\\mappings\\mapping.pkl'
+GREEDY_BATCH_SIZE = 32
+TEST_FILE = 'tests\\data.csv'

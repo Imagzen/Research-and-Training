@@ -1,5 +1,6 @@
 import sys
 from converters.text_converters import GoogleTextConverter
+from logger.Logger import Logger
 
 class LavisImageToVectorConverter:
 
@@ -13,5 +14,5 @@ class LavisImageToVectorConverter:
     def convert(self, img):
         image = self.vis_processors['eval'](img).unsqueeze(0).to(self.device)
         captions = self.model.generate({'image': image})
-        print("Caption: "+captions[0])
+        Logger.d("img2caption", captions[0])
         return self.text_converter.convert(captions[0])

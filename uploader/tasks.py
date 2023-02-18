@@ -3,6 +3,9 @@ from config import *
 import numpy as np
 import pickle
 from sklearn.cluster import KMeans
+from similarityfunctions.similarity import CosineSimilarity
+from similarityfunctions.provider import SimilarityProvider
+from logger.Logger import Logger
 
 class KMeansImageAddTask:
 
@@ -58,13 +61,13 @@ class KMeansImageAddTask:
             self.save_centroid(name, new_centroid_vector)
             mappings[name] = name
             self.save_mapping(mappings)
-            print('Adding new centroid: '+centroid)
+            Logger.d("KMeans Tasks", "Adding new centroid "+centroid)
             return
         
         mappings, rev_mapping = self.load_mappings()
         similarities = []
         for k, v in centroids.items():
-            similarities.append((k, self.cosine_similarity(vector, v)))
+            similarities.append((k, self.similarity(vector, v)))
 
         
         similarities.sort(key = lambda x: -x[1])
@@ -82,7 +85,7 @@ class KMeansImageAddTask:
             centroid_2_list = []
             for vector_name in rev_mapping[centroid]:
                 v = vectors[vector_to_ind[vector_name]]
-                if self.cosine_similarity(new_centroid_vectors[0], v) >= self.cosine_similarity(new_centroid_vectors[1], v):
+                if self.similarity(new_centroid_vectors[0], v) >= self.similarity(new_centroid_vectors[1], v):
                     centroid_1_list.append(vector_name)
                 else:
                     centroid_2_list.append(vector_name)
@@ -92,12 +95,12 @@ class KMeansImageAddTask:
             
             for vector_name in centroid_2_list:
                 mappings[vector_name] = name
-            print('Splitting centroid '+centroid)
+            Logger.d("KMeans Tasks", "Splitting centroid "+centroid)
         else:
             mappings[name] = centroid
             new_centroid_vector = self.find_new_mean_of_centroid(cluster_vectors)
             self.save_centroid(centroid, new_centroid_vector)
-            print('Adding to existing centroid '+centroid)
+            Logger.d("KMeans Tasks", "Adding to existing centroid "+centroid)
         
         self.save_mapping(mappings)
 
@@ -108,6 +111,7 @@ class KMeansImageAddTask:
     def find_new_mean_of_centroid(self, array): # array of n x m will output vector of m
         return np.average(array, axis = 0)
 
-    def cosine_similarity(self, A, B): #array cosine similarity between 2 vectors
-        return (np.dot(A,B)/(np.linalg.norm(A)*np.linalg.norm(B))+1)/2
+    def similarity(self, A, B): #array cosine similarity between 2 vectors
+        similarity_calculator = SimilarityProvider.getSimilarityCalculator()
+        return similarity_calculator.calculate(A, B)
         

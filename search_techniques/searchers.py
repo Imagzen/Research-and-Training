@@ -4,10 +4,13 @@ from config import *
 import os
 import pickle
 from converters.text_converters import GoogleTextConverter
-
+from similarityfunctions.similarity import CosineSimilarity
+from similarityfunctions.provider import SimilarityProvider
+from logger.Logger import Logger
 class Searcher(ABC):
 
     def __init__(self, text_converter):
+        self.similarity_calculator = SimilarityProvider.getSimilarityCalculator()
         self.text_converter = text_converter
         self.vectors = self.load_vectors(VECTOR_DIR_PATH, VECTOR_DIM)
         self.names = [n for n in os.listdir(IMAGE_DIR_PATH)]
@@ -20,12 +23,16 @@ class Searcher(ABC):
         return np.stack(vector_array, axis = 0)
     
     def search(self, desc):
-        print("Searching "+desc)
+        Logger.d("Searching", desc)
         input_vector = self.text_converter.convert(desc).reshape(VECTOR_DIM)
         scores = self.getMostSimilarVectors(input_vector, SEARCH_COUNT)
+        scores.sort(key = lambda x: -1*x[1])
+        result = []
         for s in scores:
-            print(self.names[s[0]], end = ', ')
-            print(s[1])
+            Logger.i("Results", self.names[s[0]]+", "+str(s[1]))
+            result.append((self.names[s[0]], s[1]))
+        
+        return result
 
     @abstractmethod
     def getMostSimilarVectors(self, input_vector, output_size):
@@ -42,7 +49,7 @@ class LinearSearcher(Searcher): # time consuming best accuracy
         for i in range(self.vectors.shape[0]):
             A = self.vectors[i]
             B = input_vector
-            similarity = (np.dot(A,B)/(np.linalg.norm(A)*np.linalg.norm(B))+1)/2
+            similarity = self.similarity_calculator.calculate(A, B)
             output.append((i, similarity))
         output.sort(key = lambda x: -1*x[1])
         return output[0:output_size] 
@@ -52,13 +59,15 @@ class GreedySearcher(Searcher): # time best, accuracy worst
     def __init__(self, text_converter):
         super().__init__(text_converter)
 
-    def util(self, output_set, column_number, thresh):
+    def util(self, input_vector, output_set, column_number, thresh):
         if thresh < MIN_THRESH:
             thresh = MIN_THRESH
         
         if column_number == VECTOR_DIM:
             return output_set
         
+        v = input_vector[column_number]
+
         dict_ = {i:[] for i in range(1,101)}
         next_output_set = []
         distances = []
@@ -75,7 +84,7 @@ class GreedySearcher(Searcher): # time best, accuracy worst
             dict_[x].append(row_number)
             
         for s in range(100, 0, -1):
-            distances.append((abs(s/100 - value), s))
+            distances.append((abs(s/100 - v), s))
         
         
         distances.sort(key = lambda x: x[0]) 
@@ -87,17 +96,16 @@ class GreedySearcher(Searcher): # time best, accuracy worst
             if count>=thresh:
                 break 
             
-        return self.util(next_output_set, column_number+1, thresh - 10)
-
+        return self.util(input_vector, next_output_set, column_number+1, thresh - 10)
 
     def getMostSimilarVectors(self, input_vector, output_size):
         output_set = [i for i in range(self.vectors.shape[0])]
-        output_set = self.util(output_set, 0, THRESH)
+        output_set = self.util(input_vector, output_set, 0, THRESH)
         output = []
         for i in output_set:
             A = self.vectors[i]
             B = input_vector
-            similarity = (np.dot(A,B)/(np.linalg.norm(A)*np.linalg.norm(B))+1)/2
+            similarity = self.similarity_calculator.calculate(A, B)
             output.append((i, similarity))
         
         output.sort(key = lambda x: -1*x[1])
@@ -144,7 +152,7 @@ class KMeansSearching(Searcher): # medium accuracy and execution time
 
         similarities = []
         for c in centroids.keys():
-            similarity = (np.dot(centroids[c],input_vector)/(np.linalg.norm(centroids[c])*np.linalg.norm(input_vector))+1)/2
+            similarity = self.similarity_calculator.calculate(centroids[c], input_vector)
             similarities.append((c, similarity))
         
         similarities.sort(key = lambda x: -x[1])

@@ -7,15 +7,20 @@ from search_techniques.searchers import KMeansSearching
 from converters.image_converters import LavisImageToVectorConverter
 from converters.text_converters import GoogleTextConverter
 from config import *
+from similarityfunctions.similarity import CosineSimilarity
+from similarityfunctions.provider import SimilarityProvider
 import os
 import tracemalloc
 import time
+from logger.Logger import Logger
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 
 if __name__ == '__main__':
+    SimilarityProvider.setSimilarityCalculator(CosineSimilarity())
     parser = argparse.ArgumentParser(description="Imagezen command line application")
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', action='store_true') # interactive mode
+    parser.add_argument('-d', action='store_true') # debug mode
     subparser = parser.add_subparsers(dest = 'command', required=True)
     search = subparser.add_parser('search')
     group = search.add_mutually_exclusive_group(required=True)
@@ -29,19 +34,21 @@ if __name__ == '__main__':
     args = parser.parse_args()
     tracemalloc.start()
     start_time = time.time()
+    if args.d:
+        Logger.mode = 4
     if args.command == 'search':
-        print("Initializing Environment")
+        Logger.i("app", "Initializing environment")
         text_converter = GoogleTextConverter()
         searcher = None
         if args.linear:
             searcher = LinearSearcher(text_converter)
-            print('Using linear search')
+            Logger.i("app", "Using linear Search")
         elif args.quick:
             searcher = GreedySearcher(text_converter)
-            print('Using quick search')
+            Logger.i("app", "Using Quick Search")
         elif args.clustering:
             searcher = KMeansSearching(text_converter)
-            print('Using clustering search')
+            Logger.i("app", "Using Clustering Search")
         if args.i:
             while True:
                 desc = input('>>>')
@@ -50,11 +57,12 @@ if __name__ == '__main__':
                 searcher.search(desc)
         else:
             searcher.search(args.desc)
+
+        Logger.d("app", "Peak memory usage "+str(tracemalloc.get_traced_memory()[1])) 
+        Logger.d("app", "Execution time "+str(time.time() - start_time))
         
-        print('Peak memory usage: '+ tracemalloc.get_traced_memory()[1])
-        print('Execution time: ' + (time.time() - start_time))
     elif args.command == 'upload':
-        print("Initializing Environment")
+        Logger.i("app", "Initializing environment")
         text_converter = GoogleTextConverter()
         image_converter = LavisImageToVectorConverter(text_converter)
         uploader = LocalUploader(image_converter, [KMeansImageAddTask()])
@@ -67,12 +75,12 @@ if __name__ == '__main__':
         else:
             uploader.upload(args.path)
 
-        print('Peak memory usage: '+ tracemalloc.get_traced_memory()[1])
-        print('Execution time: ' + (time.time() - start_time))
+        Logger.d("app", "Peak memory usage "+str(tracemalloc.get_traced_memory()[1])) 
+        Logger.d("app", "Execution time "+str(time.time() - start_time))
     elif args.command == 'list':
         files = os.listdir(IMAGE_DIR_PATH)
         for f in files:
-            print(f)
-        print(str(len(files))+" images found.")
+            Logger.i("File", f)
+        Logger.i("app", str(len(files))+" images found.")
     
     tracemalloc.stop()
