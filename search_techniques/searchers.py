@@ -7,7 +7,11 @@ from converters.text_converters import GoogleTextConverter
 from similarityfunctions.similarity import CosineSimilarity
 from similarityfunctions.provider import SimilarityProvider
 from logger.Logger import Logger
+
 class Searcher(ABC):
+
+    def remove_duplicate_from_search(self, result):
+        pass
 
     def __init__(self, text_converter):
         self.similarity_calculator = SimilarityProvider.getSimilarityCalculator()

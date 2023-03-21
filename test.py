@@ -14,12 +14,12 @@ def check_if_exists(searcher, caption, img_name, window_size):
         Returns true if on searching 'caption', img_name is present in top window_size results
     '''
     result = searcher.search(caption)
-    for i in range(window_size):
+    for i in range(min(window_size, len(result))):
         result_img_name = result[i][0]
         if(result_img_name == img_name):
             return True
         
-        return False
+    return False
 
 def test(searcher, img_names, img_captions, window_size):
     count = 0
@@ -53,10 +53,10 @@ if __name__ == '__main__':
                         if first_col[0].strip() in images_uploaded:
                             img_names.append(first_col[0].strip())
                             img_captions.append(first_col[2].strip())
-                            
+
         except Exception as e:
             Logger.e("CSV", str(e))
-        accuracy = test(LinearSearcher(GoogleTextConverter()), img_names[:20000:5], img_captions[:20000:5], 10)
+        accuracy = test(LinearSearcher(GoogleTextConverter()), img_names, img_captions, 10)
         Logger.mode = 3
         Logger.i("Test", str(accuracy))
     
